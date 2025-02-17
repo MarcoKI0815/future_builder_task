@@ -8,11 +8,9 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // TODO: initiate controllers
-  }
+  final TextEditingController _zipController = TextEditingController();
+  String _result = "Noch keine PLZ gesucht";
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -21,21 +19,25 @@ class _MainScreenState extends State<MainScreen> {
         padding: const EdgeInsets.all(8.0),
         child: Center(
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const TextField(
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(), labelText: "Postleitzahl"),
+              TextField(
+                controller: _zipController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: "Postleitzahl",
+                ),
+                keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 32),
               OutlinedButton(
-                onPressed: () {
-                  // TODO: implementiere Suche
-                },
+                onPressed: _searchCity,
                 child: const Text("Suche"),
               ),
               const SizedBox(height: 32),
-              Text("Ergebnis: Noch keine PLZ gesucht",
-                  style: Theme.of(context).textTheme.labelLarge),
+              _isLoading
+                  ? const CircularProgressIndicator()
+                  : Text(_result, style: Theme.of(context).textTheme.labelLarge),
             ],
           ),
         ),
@@ -43,15 +45,23 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    // TODO: dispose controllers
-    super.dispose();
+  void _searchCity() async {
+    setState(() {
+      _isLoading = true;
+      _result = "Suche läuft...";
+    });
+
+    String zip = _zipController.text.trim();
+    String city = await getCityFromZip(zip);
+
+    setState(() {
+      _isLoading = false;
+      _result = "Ergebnis: $city";
+    });
   }
 
   Future<String> getCityFromZip(String zip) async {
-    // simuliere Dauer der Datenbank-Anfrage
-    await Future.delayed(const Duration(seconds: 3));
+    await Future.delayed(const Duration(seconds: 3)); // Simulierte Wartezeit
 
     switch (zip) {
       case "10115":
@@ -68,5 +78,11 @@ class _MainScreenState extends State<MainScreen> {
       default:
         return 'Unbekannte Stadt';
     }
+  }
+
+  @override
+  void dispose() {
+    _zipController.dispose(); // Controller freigeben
+    super.dispose();
   }
 }
