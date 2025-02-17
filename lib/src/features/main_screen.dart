@@ -9,8 +9,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final TextEditingController _zipController = TextEditingController();
-  String _result = "Noch keine PLZ gesucht";
-  bool _isLoading = false;
+  Future<String>? _futureCity;
 
   @override
   Widget build(BuildContext context) {
@@ -31,33 +30,34 @@ class _MainScreenState extends State<MainScreen> {
               ),
               const SizedBox(height: 32),
               OutlinedButton(
-                onPressed: _searchCity,
+                onPressed: () {
+                  setState(() {
+                    _futureCity = getCityFromZip(_zipController.text.trim());
+                  });
+                },
                 child: const Text("Suche"),
               ),
               const SizedBox(height: 32),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : Text(_result, style: Theme.of(context).textTheme.labelLarge),
+              FutureBuilder<String>(
+                future: _futureCity,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text("Fehler: ${snapshot.error}");
+                  } else if (snapshot.hasData) {
+                    return Text("Ergebnis: ${snapshot.data}",
+                        style: Theme.of(context).textTheme.labelLarge);
+                  } else {
+                    return const Text("Noch keine PLZ gesucht");
+                  }
+                },
+              ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  void _searchCity() async {
-    setState(() {
-      _isLoading = true;
-      _result = "Suche läuft...";
-    });
-
-    String zip = _zipController.text.trim();
-    String city = await getCityFromZip(zip);
-
-    setState(() {
-      _isLoading = false;
-      _result = "Ergebnis: $city";
-    });
   }
 
   Future<String> getCityFromZip(String zip) async {
@@ -82,7 +82,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void dispose() {
-    _zipController.dispose(); // Controller freigeben
+    _zipController.dispose();
     super.dispose();
   }
 }
